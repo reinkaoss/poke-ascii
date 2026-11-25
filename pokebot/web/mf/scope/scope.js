@@ -17,9 +17,9 @@ template.innerHTML = `
     white-space: pre; line-height: 1.05; overflow: hidden;
   }
   .card {
-    position: absolute; left: 14px; bottom: 12px; margin: 0; padding: 8px 10px;
+    position: absolute; left: 14px; bottom: 12px; margin: 0; padding: 8px 10px; max-width: calc(100% - 28px);
     background: color-mix(in srgb, var(--bg) 82%, transparent); border: 1px dashed var(--line);
-    font-size: 12px; line-height: 1.35; white-space: pre; pointer-events: none;
+    font-size: 12px; line-height: 1.35; white-space: pre-wrap; overflow-wrap: anywhere; pointer-events: none;
   }
   .muted { color: var(--muted); }
   .accent { color: var(--color-purple-medium); }
@@ -32,8 +32,8 @@ template.innerHTML = `
   select { pointer-events: auto; max-width: 22ch; }
   button:hover, select:hover { border-color: var(--color-purple-medium); color: var(--color-purple-medium); }
   .empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); }
-  :host(.narrow) .card { left: 8px; right: 8px; bottom: 8px; font-size: 10.5px; padding: 6px 8px; }
-  :host(.narrow) .tools { top: 10px; right: 8px; }
+  :host(.narrow) .card { left: 8px; right: 8px; bottom: 8px; max-width: none; font-size: 10.5px; padding: 6px 8px; }
+  :host(.narrow) .tools { top: 10px; left: 8px; right: 8px; }
   :host(.narrow) button, :host(.narrow) select { font-size: 11px; padding: 2px 6px; }
   :host(.narrow) select { max-width: 16ch; }
 </style>
@@ -99,7 +99,10 @@ class PokeScope extends HTMLElement {
     } else if (action === 'fight' && this.card) {
       bus.emit('chat:ask', { question: `${this.card.name} vs a random pokemon` });
     } else if (action === 'evolve' && this.card) {
-      getJSON(`/api/evolution/${this.card.id}`).then((evolution) => bus.emit('evolve:play', { evolution }));
+      getJSON(`/api/evolution/${this.card.id}`).then((evolution) => {
+        evolution.startAt = this.card.id;
+        bus.emit('evolve:play', { evolution });
+      });
     }
   }
 
@@ -182,7 +185,7 @@ class PokeScope extends HTMLElement {
       `<span class="accent">#${String(c.species_id).padStart(4, '0')}</span>  <b>${c.name.toUpperCase()}</b>  ${types}${tag}\n` +
       `<span class="muted">${c.genus} · gen ${c.generation} · ${c.height} m · ${c.weight} kg</span>\n${narrow ? '' : '\n'}` +
       (narrow
-        ? `${stats}\n<span class="muted">total</span> ${c.total}  <span class="muted">weak to</span> ${weak || 'nothing'}`
+        ? `${stats}\n<span class="muted">total</span> ${c.total}\n<span class="muted">weak to</span> ${weak || 'nothing'}`
         : `${stats}\n<span class="muted">                    total</span> ${String(c.total).padStart(4)}\n` +
           `<span class="muted">weak to</span> ${weak || 'nothing'}`);
     this.$('.card').hidden = false;

@@ -7,8 +7,9 @@ const { AsciiEngine } = createOpenAsciiRuntime();
 export const TYPE_COLORS = {
   normal: '#a8a77a', fire: '#ee8130', water: '#6390f0', electric: '#f7d02c', grass: '#7ac74c',
   ice: '#96d9d6', fighting: '#c22e28', poison: '#a33ea1', ground: '#e2bf65', flying: '#a98ff3',
-  psychic: '#f95587', bug: '#a6b91a', rock: '#b6a136', ghost: '#735797', dragon: '#6f35fc',
-  dark: '#705746', steel: '#b7b7ce', fairy: '#d685ad',
+  psychic: '#f95587', bug: '#a6b91a', rock: '#b6a136',
+  // Dark/ghost are lightened vs the games so they still read as accents on our dark UI.
+  ghost: '#9b7ec8', dragon: '#6f35fc', dark: '#a8896a', steel: '#b7b7ce', fairy: '#d685ad',
 };
 
 const cssVar = (name, fallback) =>
@@ -25,7 +26,7 @@ const BASE = {
 export const THEMES = {
   pokedex: () => ({
     ...BASE, artStyle: 'classic-ascii', colorMode: 'full-color', colorMix: 0.95, colorSaturation: 1.3,
-    brightness: 57, contrast: 1.3, gamma: 0.82, highlightBoost: 0.5,
+    brightness: 62, contrast: 1.28, gamma: 0.78, highlightBoost: 0.55, localContrast: 0.82,
     foreground: '#ece9ff', background: cssVar('--bg', '#0b0a12'), accent: cssVar('--color-purple-medium', '#7062ab'),
   }),
   phosphor: () => ({
@@ -92,8 +93,27 @@ function trimTransparent(img) {
   const out = document.createElement('canvas');
   out.width = maxX - minX + 1;
   out.height = maxY - minY + 1;
-  out.getContext('2d').drawImage(full, minX, minY, out.width, out.height, 0, 0, out.width, out.height);
+  const octx = out.getContext('2d', { willReadFrequently: true });
+  octx.drawImage(full, minX, minY, out.width, out.height, 0, 0, out.width, out.height);
+  // Dark-bodied Pokémon (Umbreon, Gastly, …) vanish on our dark scenes; lift only the darkest opaque pixels.
+  liftDarkPixels(octx, out.width, out.height);
   return out;
+}
+
+/** Raise near-black opaque pixels toward a readable floor without washing out bright colours. */
+function liftDarkPixels(ctx, width, height, floor = 140) {
+  const image = ctx.getImageData(0, 0, width, height);
+  const { data } = image;
+  for (let i = 0; i < data.length; i += 4) {
+    if (data[i + 3] < 24) continue;
+    const peak = Math.max(data[i], data[i + 1], data[i + 2]);
+    if (peak >= floor || peak === 0) continue;
+    const scale = floor / peak;
+    data[i] = Math.min(255, Math.round(data[i] * scale));
+    data[i + 1] = Math.min(255, Math.round(data[i + 1] * scale));
+    data[i + 2] = Math.min(255, Math.round(data[i + 2] * scale));
+  }
+  ctx.putImageData(image, 0, 0);
 }
 
 const silhouettes = new WeakMap();
@@ -134,6 +154,14 @@ export function drawRect(ctx, img, rect, { flip = false } = {}) {
   ctx.save();
   ctx.translate(rect.cx, rect.y + rect.h / 2);
   if (flip) ctx.scale(-1, 1);
+  // Hard pale outline (survives OpenASCII dithering better than a soft drop-shadow).
+  const rim = silhouette(img, '#d8d2f4');
+  const o = Math.max(1.8, Math.min(rect.w, rect.h) * 0.022);
+  ctx.globalAlpha = 0.7;
+  for (const [dx, dy] of [[-o, 0], [o, 0], [0, -o], [0, o], [-o, -o], [o, -o], [-o, o], [o, o]]) {
+    ctx.drawImage(rim, -rect.w / 2 + dx, -rect.h / 2 + dy, rect.w, rect.h);
+  }
+  ctx.globalAlpha = 1;
   ctx.drawImage(img, -rect.w / 2, -rect.h / 2, rect.w, rect.h);
   ctx.restore();
 }

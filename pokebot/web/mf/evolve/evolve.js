@@ -136,11 +136,26 @@ class PokeEvolve extends HTMLElement {
 
     this.trail = [];
     this.childrenOf = children;
-    let current = line[0];
-    if (data.hatches) await this.hatch(current, token);
-    else await this.appear(current, token);
-
-    const ahead = line.slice(1);
+    // startAt: jump to a shown Pokémon and wait for [evolve], like after an Egg hatches.
+    // Otherwise play the family from the root (Egg / legendary appear).
+    // Forms outside the evo tree (e.g. Gigantamax) fall back to the species node.
+    const start = data.startAt != null ? (byId.get(data.startAt) || byId.get(data.target)) : null;
+    let current;
+    let ahead = [];
+    if (start) {
+      current = start;
+      this.trail = line.includes(start) ? line.slice(0, line.indexOf(start) + 1) : [start];
+      this.renderTrail();
+      this.say(`Here's ${start.name}!`);
+      await this.run({ kind: 'appear', node: start }, 1400);
+      if (token !== this.token) return;
+      await this.run({ kind: 'idle', node: start }, 600);
+    } else {
+      current = line[0];
+      if (data.hatches) await this.hatch(current, token);
+      else await this.appear(current, token);
+      ahead = line.slice(1);
+    }
     while (token === this.token) {
       const options = children(current);
       if (!options.length) break;

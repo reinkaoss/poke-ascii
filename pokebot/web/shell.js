@@ -23,7 +23,9 @@ stage.querySelector('.tabs').addEventListener('click', async (event) => {
   if (!name) return;
   show(name);
   if (name === 'evolve' && !viewEl('evolve').data && focused) {
-    bus.emit('evolve:play', { evolution: await getJSON(`/api/evolution/${focused.id}`) });
+    const evolution = await getJSON(`/api/evolution/${focused.id}`);
+    evolution.startAt = focused.id;
+    bus.emit('evolve:play', { evolution });
   }
 });
 

@@ -7,6 +7,8 @@ Everything it needs ships in this repo (`pokebot/data/pokedex.sqlite`, ~17 MB), 
 internet connection. The core needs no third-party Python packages; a small local LLM is optional
 and only makes the answers more conversational.
 
+[☕ Pay me a coffee](https://ko-fi.com/reinkaoss)
+
 ## Requirements
 
 - Python 3.10+

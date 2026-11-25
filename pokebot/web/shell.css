@@ -93,6 +93,10 @@ body {
 
 .stage::before { content: none; }
 
+/* Room under the in-pane tab strip on small screens (see mobile .tabs rules). */
+.stage { --stage-tabs: 0px; }
+.stage > [data-view] { top: var(--stage-tabs); }
+
 .tabs {
   position: absolute;
   top: -0.8em;
@@ -119,20 +123,44 @@ body {
 .tabs button:disabled { opacity: 0.4; cursor: default; }
 
 @media (max-width: 900px) {
-  html, body { height: auto; min-height: 100%; }
-  body { grid-template-rows: auto auto; }
+  /* svh = visible area with mobile browser chrome; dvh rows were getting clipped underneath it. */
+  html, body {
+    height: 100%;
+    height: 100svh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+  body { grid-template-rows: auto minmax(0, 1fr); }
   .shell-header { flex-wrap: wrap; gap: 6px 12px; padding: 8px 10px 6px; }
   .shell-main {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(440px, 64dvh) minmax(460px, 78dvh);
-    gap: 18px;
-    padding: 14px 8px 12px;
+    /* Fractions of the remaining main area (not of the full viewport), so both panes always fit. */
+    grid-template-rows: minmax(0, 1.55fr) minmax(200px, 1fr);
+    gap: 12px;
+    padding: 10px 8px max(10px, env(safe-area-inset-bottom, 0px));
+    min-height: 0;
+    overflow: hidden;
   }
   .logo { font-size: 9px; }
+  .pane { overflow: hidden; }
+  /* Keep tabs inside the pane; push every view below them so HUDs/tools don’t collide. */
+  .stage { --stage-tabs: 38px; }
+  .tabs {
+    top: 6px; left: 6px; right: 6px; justify-content: flex-start; flex-wrap: wrap;
+    padding: 2px 4px; gap: 2px 0;
+    background: color-mix(in srgb, var(--panel) 92%, transparent);
+    border: 1px solid var(--line);
+  }
+  .pane::before { top: 6px; left: auto; right: 8px; }
+  .talk {
+    display: flex; flex-direction: column; min-height: 0;
+  }
+  .talk > * { position: relative; flex: 1; min-height: 0; }
 }
 
 @media (max-width: 600px) {
   #status-line { display: none; }
-  .tabs { left: 4px; font-size: 12px; }
-  .tabs button { padding: 0 2px; letter-spacing: 0.02em; }
+  .tabs { font-size: 12px; }
+  .tabs button { padding: 2px 4px; letter-spacing: 0.02em; }
+  .shell-main { grid-template-rows: minmax(0, 1.7fr) minmax(190px, 0.95fr); }
 }

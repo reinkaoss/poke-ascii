@@ -1,5 +1,5 @@
 // <poke-chat>: streaming Q&A with the offline Pokédex assistant.
-import { askStream } from '../../lib/api.js';
+import { askStream, getJSON } from '../../lib/api.js';
 import { bus } from '../../lib/bus.js';
 
 const EXAMPLES = [
@@ -16,8 +16,11 @@ const EXAMPLES = [
 const template = document.createElement('template');
 template.innerHTML = `
 <style>
-  :host { display: flex; flex-direction: column; min-height: 0; }
-  .messages { flex: 1; overflow-y: auto; padding: 18px 14px 8px; display: flex; flex-direction: column; gap: 12px; }
+  :host { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+  .messages {
+    flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 14px 14px 8px; display: flex; flex-direction: column; gap: 12px;
+  }
   .msg { white-space: pre-wrap; word-break: break-word; }
   .prompt { color: var(--muted); user-select: none; }
   .user .prompt { color: var(--color-purple-medium); }
@@ -28,24 +31,46 @@ template.innerHTML = `
   .art { margin: 6px 0 0; color: var(--color-purple-medium); font-size: 7px; line-height: 1.05; white-space: pre; overflow-x: auto; }
   .notice { color: var(--color-purple-medium); }
   .error { color: var(--bad); }
-  .chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 14px; border-top: 1px dashed var(--line); }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .actions button {
+    background: var(--bg); color: var(--text); border: 1px solid var(--line);
+    font: inherit; font-size: 12px; padding: 4px 8px; cursor: pointer;
+  }
+  .actions button:hover { border-color: var(--color-purple-medium); color: var(--color-purple-medium); }
+  .chips {
+    flex-shrink: 0; display: flex; flex-wrap: nowrap; gap: 6px; padding: 6px 14px;
+    border-top: 1px dashed var(--line); overflow-x: auto; scrollbar-width: none;
+  }
+  .chips::-webkit-scrollbar { display: none; }
   .chips button {
-    background: none; color: var(--muted); border: 1px solid var(--line); font: inherit; font-size: 11px;
-    padding: 1px 6px; cursor: pointer;
+    flex: 0 0 auto; background: none; color: var(--muted); border: 1px solid var(--line);
+    font: inherit; font-size: 11px; padding: 4px 8px; cursor: pointer; white-space: nowrap;
   }
   .chips button:hover { color: var(--color-purple-medium); border-color: var(--color-purple-medium); }
-  form { display: flex; align-items: center; gap: 8px; padding: 10px 14px 12px; border-top: 1px solid var(--line); }
+  form {
+    flex-shrink: 0; display: flex; align-items: center; gap: 8px;
+    min-height: 44px; padding: 8px 12px 10px;
+    border-top: 1px solid var(--line); background: var(--panel);
+  }
   form span { color: var(--color-purple-medium); }
   input {
-    flex: 1; background: transparent; border: 0; outline: none; color: var(--text); font: inherit; caret-color: var(--color-purple-medium);
+    flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: var(--text);
+    font: inherit; font-size: 16px; caret-color: var(--color-purple-medium);
   }
   input::placeholder { color: var(--muted); }
+  @media (min-width: 901px) {
+    input { font-size: inherit; }
+    .chips { flex-wrap: wrap; overflow-x: visible; }
+    .chips button { padding: 1px 6px; white-space: normal; }
+    form { min-height: 0; padding: 10px 14px 12px; }
+    .messages { padding: 18px 14px 8px; }
+  }
 </style>
 <div class="messages" role="log" aria-live="polite"></div>
 <div class="chips"></div>
 <form autocomplete="off">
   <span>›</span>
-  <input name="q" placeholder="ask about any pokémon, move, ability, item or type…  try “pikachu vs mewtwo”" aria-label="Question">
+  <input name="q" placeholder="ask about a pokémon… try “pikachu vs mewtwo”" aria-label="Question">
 </form>
 `;
 
@@ -102,6 +127,24 @@ class PokeChat extends HTMLElement {
     return this.addMessage('bot', `<span class="prompt">dex ›</span> <span class="text">${formatAnswer(text)}</span>`);
   }
 
+  offerEvolve(bot, card) {
+    if (!card?.id || bot.querySelector('[data-evolve]')) return;
+    const row = document.createElement('div');
+    row.className = 'actions';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.evolve = String(card.id);
+    button.textContent = '[ evolve ]';
+    button.title = `Evolve ${card.name}`;
+    button.addEventListener('click', async () => {
+      const evolution = await getJSON(`/api/evolution/${card.id}`);
+      evolution.startAt = card.id;
+      bus.emit('evolve:play', { evolution });
+    });
+    row.append(button);
+    bot.append(row);
+  }
+
   scrollDown() {
     const list = this.$('.messages');
     list.scrollTop = list.scrollHeight;
@@ -128,6 +171,8 @@ class PokeChat extends HTMLElement {
             pre.textContent = shrinkArt(event.card.ascii);
             bot.append(pre);
           }
+          // Same idea as after an Egg hatches: offer [evolve] for the Pokémon just shown.
+          if (intent !== 'evolve') this.offerEvolve(bot, event.card);
         } else if (event.type === 'evolve') {
           bot.insertAdjacentHTML('beforeend', '<div class="notice">» playing in the evolution view</div>');
           bus.emit('evolve:play', { evolution: event.evolution });
