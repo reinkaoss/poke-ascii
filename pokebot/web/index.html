@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>pokebot · offline pokédex</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/shell.css">
+  <script type="module" src="/shell.js"></script>
+  <script type="module" src="/mf/scope/scope.js"></script>
+  <script type="module" src="/mf/dex/dex.js"></script>
+  <script type="module" src="/mf/evolve/evolve.js"></script>
+  <script type="module" src="/mf/arena/arena.js"></script>
+  <script type="module" src="/mf/chat/chat.js"></script>
+</head>
+<body>
+  <header class="shell-header">
+    <pre class="logo" aria-label="pokebot">┌─┐┌─┐┬┌─┌─┐┌┐ ┌─┐┌┬┐
+├─┘│ │├┴┐├┤ ├┴┐│ │ │
+┴  └─┘┴ ┴└─┘└─┘└─┘ ┴ </pre>
+    <div class="status">
+      <span id="status-line">connecting…</span>
+      <label class="theme">scene
+        <select id="theme-select">
+          <option value="pokedex">full color</option>
+          <option value="phosphor">phosphor</option>
+          <option value="braille">braille</option>
+          <option value="pixel">pixel</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <main class="shell-main">
+    <section class="pane stage" aria-label="Scene">
+      <nav class="tabs" aria-label="Views">
+        <button type="button" data-tab="scope" aria-pressed="true">scope</button>
+        <button type="button" data-tab="dex" aria-pressed="false">pokédex</button>
+        <button type="button" data-tab="evolve" aria-pressed="false">evolution</button>
+        <button type="button" data-tab="arena" aria-pressed="false" disabled>arena</button>
+      </nav>
+      <poke-scope data-view="scope"></poke-scope>
+      <poke-dex data-view="dex" hidden></poke-dex>
+      <poke-evolve data-view="evolve" hidden></poke-evolve>
+      <poke-arena data-view="arena" hidden></poke-arena>
+    </section>
+    <section class="pane talk" aria-label="Chat">
+      <poke-chat></poke-chat>
+    </section>
+  </main>
+</body>
+</html>

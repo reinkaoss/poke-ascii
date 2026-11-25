@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+models/
+pokebot/data/*.tmp
+# source clones for build_db (compiled into pokebot/data/pokedex.sqlite)
+/pokeapi/
+/pokemon/
+/sprites/
