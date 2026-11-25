@@ -53,6 +53,22 @@ The web app works on phones too: run `pokebot serve --host 0.0.0.0` and open
 
 Options: `pokebot serve --port 9000`, `--host 0.0.0.0`, `--no-llm`, `--open`.
 
+## Deploy (Render free demo)
+
+The app needs a long-running Python process, so static hosts like Netlify won't work. For a
+public demo link, [Render](https://render.com) free is the easiest:
+
+1. Push this repo to GitHub (it already includes `render.yaml`).
+2. On [dashboard.render.com](https://dashboard.render.com): **New → Blueprint** → pick the repo.
+3. Apply the blueprint. Render installs the package and starts
+   `pokebot serve --host 0.0.0.0 --no-llm` (it reads `$PORT` automatically).
+4. Open the `*.onrender.com` URL it gives you.
+
+The free service sleeps after ~15 minutes with no traffic, so the first visit after a pause can
+take half a minute. Answers use Pokédex templates (no LLM) so it fits in free memory. For an
+always-on host or the local model, use a small VPS (see free options in the project discussion)
+or run `pokebot serve --host 0.0.0.0` yourself.
+
 ## Optional: the local LLM
 
 Without a model, answers come straight from the Pokédex (marked `[pokedex]`). With one, the

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import sys
 
@@ -165,8 +166,9 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(func=cmd_ask)
 
     p = sub.add_parser("serve", help="Start the browser app")
-    p.add_argument("--port", type=int, default=8765)
-    p.add_argument("--host", default="127.0.0.1")
+    # Hosts like Render set PORT; bind all interfaces there with --host 0.0.0.0.
+    p.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8765")))
+    p.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
     p.add_argument("--no-llm", action="store_true")
     p.add_argument("--open", action="store_true", help="open the browser")
     p.set_defaults(func=cmd_serve, needs_dex=False)

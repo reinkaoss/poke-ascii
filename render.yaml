@@ -1,0 +1,11 @@
+# Blueprint for https://render.com — connect the GitHub repo and deploy this file.
+# Free web services sleep after ~15 minutes idle; the first hit after that is slow.
+# No LLM on the free tier (template answers only): add .[llm] + a model only on a paid plan.
+services:
+  - type: web
+    name: poke-ascii
+    runtime: python
+    plan: free
+    buildCommand: pip install .
+    startCommand: pokebot serve --host 0.0.0.0 --no-llm
+    healthCheckPath: /api/status
